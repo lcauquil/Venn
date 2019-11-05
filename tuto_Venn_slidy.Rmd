@@ -1,0 +1,437 @@
+---
+title: "Tuto diagramme de venn"
+author: "Laurent Cauquil"
+date: "15/10/2019"
+output: slidy_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      fig.align = "center")
+```
+
+```{r, include = FALSE}
+futile.logger::flog.threshold(futile.logger::ERROR, name = "VennDiagramLogger")
+```
+
+## Diagramme de Venn
+
+```{r, fig.height = 7, fig.width = 7, echo = F, warning = F}
+suppressPackageStartupMessages(library(VennDiagram))
+set.seed(123)
+list_No <- list(list_A = paste0("No_", sample(x = 1000, size = 600, replace = F)),
+                 list_B = paste0("No_", sample(x = 1000, size = 700, replace = F)),
+                 list_C = paste0("No_", sample(x = 1000, size = 500, replace = F)),
+                 list_D = paste0("No_", sample(x = 1000, size = 800, replace = F)),
+                 list_E = paste0("No_", sample(x = 1000, size = 550, replace = F)))
+
+suppressPackageStartupMessages(library(gameofthrones))
+pal_tully = got(5, option = "tully")
+
+grid.draw(venn.diagram(list_No, filename = NULL,
+             ## rajoute un titre
+             main = "Diagramme de Venn",
+             ## taille du titre
+             main.cex = 2,
+             ## titre en gras
+             main.fontface = "bold",
+             ## rajoute un sous-titre
+             sub = "Croisement des 5 listes",
+             ## sous-titre en italique
+             sub.fontface = "italic",
+             ## taille du sous-titre
+             sub.cex = 1,
+             ## couleur de chaque label des ensembles
+             cat.col = pal_tully,
+             ## epaisseur des contours des ensembles
+             lwd = c(0),
+             ## style des contours des ensembles
+             lty = c(0),
+             ## couleur des ensembles
+             fill = pal_tully,
+             ## couleur des contours des ensembles
+             col = pal_tully,
+             ## transparence des ensembles
+             alpha = .4,
+             ## taille des labels des ensembles
+             cat.cex = 1.5,
+             ## taille des labels de tous les sous-ensembles
+             cex = .8, # rep(1,31),
+             ## couleur des labels de chacun des sous-ensembles
+             label.col = "black",
+             ## rotation de l'ensemble de la figure (reverse clockwise)
+             rotation.degree = 45,
+             ## distance du label à son ensemble (peut être négatif)
+             cat.dist = c(0.2, 0.2, 0.2, 0.2, 0.25),
+             ## espace autour du diagramme
+             margin = .2))
+```
+
+## Objectif
+
+Représenter sous forme d'ensembles chevauchant des similitudes ou des différences entre plusieurs listes d'éléments
+
+## Données entrées
+
+ - Soit les effectifs correspondants à chacun des sous-ensembles
+ - Soit les listes d'éléments des ensembles de départ
+
+## Données de sorties
+
+ - Objet avec tous les effectifs de tous les sous-ensembles
+ - Listes des éléments de tous les sous-ensembles (suivant données de départ et package)
+
+## Diagrammes de sortie
+
+ - Lisibles jusqu'à 5 ensembles (graph possible jusqu'à 8-9)
+ - Différentes formes (ellipses, cercles, carrés, ChowRuskey, Edwards...)
+ - Taille peut être proportionnelle aux effectifs
+ - Autres types de représentation: Vennpie, Upset
+
+## Packages
+
+Il existe pas mal de packages qui permettent de tracer des diagrammes de Venn à la fois sur le CRAN et Bioconductor
+
+La plupart ne prennent en entrée que les effectifs des ensembles et des sous-ensembles, on ne peut pas revenir aux éléments constitutifs des sous-ensembles  
+
+Certains sont personnalisables à loisirs mais ne produisent pas forcement de jolis diagrammes et inversement  
+
+Difficile de s'arrêter sur un seul package...
+
+## 
+
+<Br><Br>
+<center><font size = "7">Compromis avec le package `VennDetail`</center></font> 
+<center><font size = "5">(Bioconductor)</center></font>
+<Br><Br>
+
+https://bioconductor.org/packages/release/bioc/html/VennDetail.html
+
+## Installation du package à partir du dépôt Bioconductor
+
+```{r, eval = FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("VennDetail")
+```
+
+## Dataset
+
+On créé un jeu de données de 5 listes de numéros pris entre 0 et 1000, et d'effectifs entre 500 et 800.  
+
+```{r}
+set.seed(123)
+list_No <- list(list_A = paste0("No_", sample(x = 1000, size = 600, replace = F)),
+                 list_B = paste0("No_", sample(x = 1000, size = 700, replace = F)),
+                 list_C = paste0("No_", sample(x = 1000, size = 500, replace = F)),
+                 list_D = paste0("No_", sample(x = 1000, size = 800, replace = F)),
+                 list_E = paste0("No_", sample(x = 1000, size = 550, replace = F)))
+str(list_No)
+```
+
+## Objet de class `venn`
+
+Création d'un objet de type `venn` 
+
+```{r}
+library(VennDetail)
+venn_No <- venndetail(list_No)
+```
+
+## Objet de class `venn` {.build .smaller}
+
+**Il y a 5 listes, qui conduisent à 2^5 sous-ensembles soit 32 effectifs à calculer (en comptant l'ensemble total**)  
+
+```{r}
+summary(venn_No)
+```
+
+## Barplot des effectifs
+
+### Représentation en barplot des effectifs des sous-ensembles
+
+Pas très visible, avec 5 listes il y a 31 barres
+
+```{r, fig.width = 12}
+dplot(venn_No, order = T)
+```
+
+## Extraction de résultats
+
+La fonction `getSet()` permet d'extraire le détail d'un ou plusieurs sous-ensembles
+
+```{r}
+## intersection des list_A et list_B
+list_A_B <- getSet(venn_No, c("list_A_list_B"))
+head(list_A_B)
+```
+
+## Extraction de résultats
+
+"Shared" donne la liste des No communs aux 5 listes (attention à la majuscule)
+
+```{r}
+## No présents dans les 5 ensembles
+shared_No <- getSet(venn_No, c("Shared"))
+head(shared_No)
+```
+
+## Représentation graphique
+
+### Diagramme de venn avec package `VennDetail`
+
+Fonction `plot()` de `VennDetail` avec les paramètres par défaut
+
+```{r}
+plot(venn_No)
+```
+
+## On peut contrôler différents paramètres:
+
+### Choix d'une palette de couleurs
+
+```{r, warning = FALSE}
+## chargement de la library contenant des palettes
+library(gameofthrones)
+## création d'une palette a 5 couleurs à partir de la palette "tully" de GOT
+pal_tully = got(5, option = "tully")
+## affichage de la palette avec le package pals
+pals::pal.bands(pal_tully)
+```
+
+## On peut contrôler différents paramètres:
+
+### Application de la palette
+
+```{r, warning = FALSE}
+plot(venn_No, 
+     mycol = pal_tully)
+```
+
+## On peut contrôler différents paramètres:
+
+### Couleur des bordures des ensembles identique aux ensembles
+
+```{r}
+plot(venn_No, 
+     mycol = pal_tully, 
+     col = pal_tully)
+```
+
+## On peut contrôler différents paramètres:
+
+### Diminue la taille des labels dans les sous-ensembles
+ 
+```{r}
+plot(venn_No, 
+     mycol = pal_tully, 
+     col = pal_tully,
+     cex = 1)
+```
+
+## Représentation de type "upset"
+
+Ce mode de représentation permet de visualiser clairement des jeux de données avec de multiples combinaisons
+
+```{r}
+plot(venn_No, type = "upset", nintersects = NA)
+```
+
+## 
+
+<Br><Br>
+<center><font size = "7">Customisation avec le package `VennDiagram`</center></font>
+<Br><Br>
+
+## Diagramme de venn avec le package `VennDiagram`
+
+ - Jusqu'à 5 listes
+ - Packages très complet au niveau du paramétrage du diagramme produit  
+ - Reçoit en entrée une liste de vecteur
+ - Exporte les graphs en .tiff, .svg, .png
+ - Récupération des listes des sous-ensembles pas immédiate
+
+## Diagramme de venn avec le package `VennDiagram`
+
+De part ses nombreux paramètres graphiques, le diagramme produit par défaut est très simple. 
+Il faut donc mettre un peu les mains dedans pour le rendre attractif
+
+Les diagrammes sont affichés directement avec la fonction `grid.draw` et l'argument `file = NULL` dans la fonction `venn.diagram()`  
+
+Par défaut, `VennDiagram` un fichier log à chaque création de figure, pour éviter ce comportement il faut lancer cette ligne de code en amont
+
+<font size = "5">`futile.logger::flog.threshold(futile.logger::ERROR, name = "VennDiagramLogger")`</font>
+
+
+## Diagramme par défaut
+
+Prends directement en entrée les listes
+
+```{r, fig.height = 6, fig.width = 7}
+library(VennDiagram)
+# venn.diagram(list_No, filename = "fig/dig_defaut.png", imagetype = "png")
+grid.draw(venn.diagram(list_No, filename = NULL))
+```
+
+## Avec la palette de couleurs "tully"
+
+```{r, fig.height = 6, fig.width = 7}
+grid.draw(venn.diagram(list_No, filename = NULL,
+             fill = pal_tully))
+```
+
+## Personnalisation
+
+Aperçu de quelques paramètres
+
+```{r, fig.height = 7, fig.width = 7}
+grid.draw(venn.diagram(list_No, filename = NULL,
+             ## rajoute un titre
+             main = "Diagramme de Venn",
+             ## taille du titre
+             main.cex = 2,
+             ## titre en gras
+             main.fontface = "bold",
+             ## rajoute un sous-titre
+             sub = "Croisement des 5 listes",
+             ## sous-titre en italique
+             sub.fontface = "italic",
+             ## taille du sous-titre
+             sub.cex = 1,
+             ## couleur de chaque label des ensembles
+             cat.col = c("#2ECCFA", "#58FA58", "#FAAC58", "#58FA58", "#FAAC58"),
+             ## epaisseur des contours des ensembles
+             lwd = c(0,1,2,3,4),
+             ## style des contours des ensembles
+             lty = c(0,1,2,3,4),
+             ## couleur des ensembles
+             fill = c("#2ECCFA", "#58FA58", "#FAAC58", "#58FA58", "#FAAC58"),
+             ## couleur des contours des ensembles
+             col = c("#2ECCFA", "#58FA58", "#FAAC58", "#58FA58", "#FAAC58"),
+             ## transparence des ensembles
+             alpha = .5,
+             ## taille des labels des ensembles
+             cat.cex = c(.5, 1, 1.5, 2, 2.5),
+             ## taille des labels de tous les sous-ensembles
+             cex = .8, # rep(1,31),
+             ## couleur des labels de chacun des sous-ensembles
+             label.col = c(rep(pal_tully, 6), "white"),
+             ## rotation de l'ensemble de la figure (reverse clockwise)
+             rotation.degree = 45,
+             ## distance du label à son ensemble (peut être négatif)
+             cat.dist = c(0.2, 0.3, 0.2, 0.2, 0.2),
+             ## espace autour du diagramme
+             margin = .2))
+```
+
+## Détail du partitionnement des sous-ensembles
+
+L'information est difficile à récupérer, c'est pourquoi il vaut mieux utiliser `VennDetail` à cette étape
+
+```{r}
+get.venn.partitions(list_No)
+```
+
+## Fusion de données
+
+A noter que le package VennDetail permet la fusion 2 jeu de données. La fonction `merge()` fusionne le résultat de 2 objets de type venn
+
+
+```{r}
+A <- sample(1:100, 40, replace = FALSE)
+B <- sample(1:100, 60, replace = FALSE)
+C <- sample(1:100, 40, replace = FALSE)
+res1 <- venndetail(list(A = A, B = B))
+res2 <- venndetail(list(A = A, C = C))
+res <- merge(res1, res2)
+res
+```
+
+## Extraction des listes (fonction maison)
+
+ - Extraction des effectifs des sous-ensembles
+ - Export dans un fichier Excel
+
+```{r, eval = FALSE}
+## récupère le résultat complet
+result <- data.frame(venn_No@result)
+
+## créé une liste avec le détail de chaque sous-ensemble dans une liste
+list_result <- vector("list", length(levels(result$Subset)))
+for (i in seq(length(list_result)))
+{
+  tmp <- as.character(result[result$Subset == levels(result$Subset)[i],2])
+  list_result[[i]] <- affil[affil$Cluster %in% tmp,]
+  names(list_result)[i] <- levels(result$Subset)[i]
+}
+
+## export dans un fichier Excel, 1 feuille par liste
+library(openxlsx)
+write.xlsx(list_result, file = "list_result.xlsx", colNames = T)
+```
+
+<center>![](C:/P/GIT/tuto_Venn/logo_excel.png)</center>
+
+## Autres packages
+
+https://cran.r-project.org/web/packages/colorfulVennPlot/index.html
+
+https://cran.r-project.org/web/packages/eulerr/index.html
+
+https://cran.r-project.org/web/packages/eVenn/index.html
+
+https://cran.r-project.org/web/packages/venneuler/index.html
+
+https://cran.r-project.org/web/packages/vennplot/index.html
+
+https://cran.r-project.org/web/packages/ggVennDiagram/index.html  
+(Nouveau, 4 listes, manque des options)
+
+## Création de diagramme de venn en ligne
+
+https://bioinfogp.cnb.csic.es/tools/venny/index.html  (up to 4)
+
+http://jvenn.toulouse.inra.fr/app/example.html  (up to 6)
+
+http://www.interactivenn.net/  (up to 6)
+
+
+## 
+
+
+```{r, echo = F}
+grid.draw(venn.diagram(list_No, filename = NULL,
+             ## rajoute un titre
+             main = "Your turn",
+             ## taille du titre
+             main.cex = 3,
+             ## titre en gras
+             main.fontface = "bold",
+             ## couleur de chaque label des ensembles
+             cat.col = pal_tully,
+             ## epaisseur des contours des ensembles
+             lwd = c(0),
+             ## style des contours des ensembles
+             lty = c(0),
+             ## couleur des ensembles
+             fill = pal_tully,
+             ## couleur des contours des ensembles
+             col = pal_tully,
+             ## transparence des ensembles
+             alpha = .4,
+             ## taille des labels des ensembles
+             cat.cex = 1.5,
+             ## taille des labels de tous les sous-ensembles
+             cex = .8, # rep(1,31),
+             ## couleur des labels de chacun des sous-ensembles
+             label.col = "black",
+             ## rotation de l'ensemble de la figure (reverse clockwise)
+             rotation.degree = 45,
+             ## distance du label à son ensemble (peut être négatif)
+             cat.dist = c(0.2, 0.2, 0.2, 0.2, 0.25),
+             ## espace autour du diagramme
+             margin = .2))
+
+```
+
